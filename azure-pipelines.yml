@@ -4,51 +4,22 @@ trigger:
       - main
 
 variables:
-  # Azure Resource Manager service connection
-  azureServiceConnection: 'Azure subscription 1 (5ce8f6e7-670b-4ecc-a32d-3ad5c4c3ccef)'
-  azureResourceGroup: 'example-resources'
-  azureLocation: 'West Europe'
-  storageAccountName: 'examplestorageacct'
+  azureServiceConnection: 'azure'
+  resourceGroupName: 'example-resources'
+  location: 'West Europe'
 
 stages:
   - stage: Deploy
     jobs:
-      - job: Terraform
+      - job: CreateResourceGroup
         pool:
           vmImage: 'ubuntu-latest'
         steps:
-          - task: UseDotNet@2
-            inputs:
-              packageType: 'sdk'
-              version: '5.x'
-              installationPath: $(Agent.ToolsDirectory)/dotnet
-          
-          - checkout: self
-
           - task: AzureCLI@2
             inputs:
               azureSubscription: $(azureServiceConnection)
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                # Install Terraform
-                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
-                . ~/.nvm/nvm.sh
-                nvm install 14
-                npm install -g azure-cli
-
-                curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-                sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-                sudo apt-get update && sudo apt-get install terraform
-
-                # Initialize Terraform
-                terraform init
-
-                # Apply Terraform configuration
-                terraform apply -auto-approve
-
-          # Optional: Publish Terraform plan
-          - task: PublishBuildArtifacts@1
-            inputs:
-              PathtoPublish: '$(System.DefaultWorkingDirectory)'
-              ArtifactName: 'terraform'
+                echo "Creating Resource Group: $(resourceGroupName)"
+                az group create --name $(resourceGroupName) --location $(location)
